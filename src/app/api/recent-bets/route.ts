@@ -64,5 +64,9 @@ export async function GET() {
     .lt('placed_at', end.toISOString());
   const totalToday = (today ?? []).reduce((s: number, b: any) => s + (b?.stake ?? 0), 0);
 
-  return NextResponse.json({ items, totalToday });
+  return NextResponse.json({ items, totalToday }, {
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+  });
 }
