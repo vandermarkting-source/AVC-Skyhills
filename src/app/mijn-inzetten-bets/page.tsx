@@ -57,20 +57,51 @@ export default function MijnInzettenBetsPage() {
 
   useEffect(() => {
     const refreshRecent = async () => {
-      const resp = await fetch(`/api/recent-bets?ts=${Date.now()}`, { cache: 'no-store' });
-      const json = await resp.json();
-      const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
-        id: b.id,
-        title: b.title,
-        option: b.option,
-        stake: b.stake,
-        potentialWin: b.potentialWin,
-        status: b.status,
-        emoji: b.title?.includes('vs') ? '🏐' : '🎯',
-        userName: b.userName,
-      }));
-      setRecentBets(recMapped);
-      setTotalToday(Number(json?.totalToday ?? 0));
+      const { data, error } = await (supabase as any)
+        .from('bets')
+        .select(
+          `
+          id, user_id, stake, potential_payout, status, placed_at,
+          bet_options!inner (
+            id, option_text,
+            matches (id, home_team, away_team),
+            fun_bets (id, title)
+          ),
+          user_profiles:user_id (id, full_name)
+        `
+        )
+        .order('placed_at', { ascending: false })
+        .limit(30);
+      if (!error) {
+        const recMapped: ListBet[] = (data ?? []).map((b: any) => {
+          const isMatch = !!b.bet_options?.matches?.id;
+          const title = isMatch
+            ? `${b.bet_options?.matches?.home_team ?? ''} vs ${b.bet_options?.matches?.away_team ?? ''}`
+            : (b.bet_options?.fun_bets?.title ?? 'Fun Bet');
+          return {
+            id: b.id,
+            title,
+            option: b.bet_options?.option_text ?? '',
+            stake: b.stake,
+            potentialWin: b.potential_payout,
+            status: b.status,
+            emoji: isMatch ? '🏐' : '🎯',
+            userName: b.user_profiles?.full_name ?? 'Onbekend',
+          };
+        });
+        setRecentBets(recMapped);
+
+        const startLocal = new Date();
+        startLocal.setHours(0, 0, 0, 0);
+        const endLocal = new Date(startLocal.getTime() + 24 * 60 * 60 * 1000);
+        const { data: today } = await (supabase as any)
+          .from('bets')
+          .select('stake, placed_at')
+          .gte('placed_at', startLocal.toISOString())
+          .lt('placed_at', endLocal.toISOString());
+        const total = (today ?? []).reduce((s: number, bb: any) => s + (bb?.stake ?? 0), 0);
+        setTotalToday(Number(total ?? 0));
+      }
     };
 
     const ch = (supabase as any)
