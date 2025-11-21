@@ -26,7 +26,6 @@ export default function Header() {
     { href: '/wedstrijden-matches', label: 'Wedstrijden' },
     { href: '/fun-bets', label: 'Fun Bets' },
     { href: '/ranglijst-leaderboard', label: 'Ranglijst' },
-    { href: '/mijn-inzetten-bets', label: 'Inzetten' },
     ...(profile?.role === 'admin' ? [{ href: '/admin-panel', label: 'Admin' }] : []),
   ];
 
@@ -174,15 +173,9 @@ export default function Header() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">Ingezette punten</span>
-                <button
-                  onClick={() => {
-                    setShowPointsPanel(false);
-                    router.push('/mijn-inzetten-bets');
-                  }}
-                  className="font-data font-semibold text-warning hover:underline"
-                >
+                <span className="font-data font-semibold text-warning">
                   {reservedPoints.toLocaleString('nl-NL')}
-                </button>
+                </span>
               </div>
             </div>
           </div>
@@ -200,15 +193,9 @@ export default function Header() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">Ingezette punten</span>
-                <button
-                  onClick={() => {
-                    setShowPointsPanel(false);
-                    router.push('/mijn-inzetten-bets');
-                  }}
-                  className="font-data font-semibold text-warning hover:underline"
-                >
+                <span className="font-data font-semibold text-warning">
                   {reservedPoints.toLocaleString('nl-NL')}
-                </button>
+                </span>
               </div>
             </div>
           </div>
