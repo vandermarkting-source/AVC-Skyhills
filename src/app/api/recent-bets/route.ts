@@ -45,8 +45,20 @@ export async function GET() {
       potentialWin: b.potential_payout,
       status: b.status,
       title,
+      placedAt: b.placed_at,
     };
   });
 
-  return NextResponse.json({ items });
+  // Dag-totaal (UTC daggrenzen)
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+  const { data: today } = await admin
+    .from('bets')
+    .select('stake, placed_at')
+    .gte('placed_at', start.toISOString())
+    .lt('placed_at', end.toISOString());
+  const totalToday = (today ?? []).reduce((s: number, b: any) => s + (b?.stake ?? 0), 0);
+
+  return NextResponse.json({ items, totalToday });
 }

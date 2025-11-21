@@ -23,6 +23,7 @@ export default function MijnInzettenBetsPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [myBets, setMyBets] = useState<ListBet[]>([]);
   const [recentBets, setRecentBets] = useState<ListBet[]>([]);
+  const [totalToday, setTotalToday] = useState<number>(0);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -51,37 +52,20 @@ export default function MijnInzettenBetsPage() {
       });
       setMyBets(myMapped);
 
-      const { data: recent } = await betService.getRecentBets(20);
-      const userIds = Array.from(new Set((recent ?? []).map((b: any) => b.user_id).filter(Boolean)));
-      let nameMap: Record<string, string> = {};
-      if (userIds.length > 0) {
-        const { data: users } = await (supabase as any)
-          .from('user_profiles')
-          .select('id, full_name')
-          .in('id', userIds);
-        for (const u of users ?? []) {
-          nameMap[u.id as string] = (u.full_name as string) ?? '';
-        }
-      }
-      const recMapped: ListBet[] = (recent ?? []).map((b: any) => {
-        const isMatch = !!b.bet_options?.match_id;
-        const title = isMatch
-          ? `${b.bet_options?.matches?.home_team ?? ''} vs ${b.bet_options?.matches?.away_team ?? ''}`
-          : (b.bet_options?.fun_bets?.title ?? 'Fun Bet');
-        const option = b.bet_options?.option_text ?? '';
-        const emoji = isMatch ? '🏐' : '🎯';
-        return {
-          id: b.id,
-          title,
-          option,
-          stake: b.stake,
-          potentialWin: b.potential_payout,
-          status: b.status,
-          emoji,
-          userName: nameMap[b.user_id as string] ?? 'Onbekend',
-        };
-      });
+      const resp = await fetch('/api/recent-bets');
+      const json = await resp.json();
+      const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
+        id: b.id,
+        title: b.title,
+        option: b.option,
+        stake: b.stake,
+        potentialWin: b.potentialWin,
+        status: b.status,
+        emoji: b.title?.includes('vs') ? '🏐' : '🎯',
+        userName: b.userName,
+      }));
       setRecentBets(recMapped);
+      setTotalToday(Number(json?.totalToday ?? 0));
     };
     load();
   }, [user]);
@@ -109,12 +93,17 @@ export default function MijnInzettenBetsPage() {
       <Header />
       <main className="pt-[60px] px-5 py-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">
               <Icon name="TicketIcon" size={28} className="text-primary" />
-              <h1 className="text-3xl md:text-4xl font-bold text-text-primary">Mijn inzetten</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-text-primary">Inzetten</h1>
             </div>
-            <p className="text-text-secondary">Overzicht van jouw lopende inzetten</p>
+            <div className="bg-card border border-border rounded-md p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Totale inzet vandaag</span>
+                <span className="font-data font-semibold text-primary">{totalToday} pts</span>
+              </div>
+            </div>
           </div>
 
           {/* Mijn inzetten */}
@@ -146,32 +135,32 @@ export default function MijnInzettenBetsPage() {
             )}
           </div>
 
-          {/* Recente inzetten */}
+          {/* Recente inzetten (alle spelers) */}
           <div className="mb-6 flex items-center gap-2">
             <Icon name="ClockIcon" size={20} className="text-text-secondary" />
             <h2 className="text-xl font-semibold text-text-primary">Recente inzetten</h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {recentBets.length === 0 ? (
               <div className="bg-card border border-border rounded-md p-4 text-text-secondary">Nog geen recente inzetten.</div>
             ) : (
               recentBets.map((b) => (
-                <div key={b.id} className="bg-card border border-border rounded-md p-3 flex items-center justify-between">
+                <div key={b.id} className="bg-card border border-border rounded-sm p-2 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl" role="img" aria-label="bet">
+                    <span className="text-xl" role="img" aria-label="bet">
                       {b.emoji}
                     </span>
                     <div>
-                      <div className="font-medium text-text-primary">{b.title}</div>
+                      <div className="text-sm font-medium text-text-primary">{b.title}</div>
                       <div className="text-xs text-text-secondary">Door {b.userName}</div>
-                      <div className="text-sm text-text-secondary">Optie: {b.option}</div>
+                      <div className="text-xs text-text-secondary">Optie: {b.option}</div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs text-text-secondary">Inzet</div>
-                    <div className="font-data font-semibold text-text-primary">{b.stake} punten</div>
-                    <div className="text-xs text-text-secondary">Mogelijke winst</div>
-                    <div className="font-data font-semibold text-success">{b.potentialWin} punten</div>
+                    <div className="text-[11px] text-text-secondary">Inzet</div>
+                    <div className="font-data font-semibold text-text-primary text-sm">{b.stake} pts</div>
+                    <div className="text-[11px] text-text-secondary">Mogelijke winst</div>
+                    <div className="font-data font-semibold text-success text-sm">{b.potentialWin} pts</div>
                   </div>
                 </div>
               ))
