@@ -143,16 +143,34 @@ const WedstrijdenInteractive = () => {
               : closing.getTime() - now.getTime() < 15 * 60 * 1000
                 ? 'closing-soon'
                 : 'new';
+        const opts = (m.bet_options ?? []).map((o) => ({
+          id: o.id,
+          text: String(o.option_text ?? '').toLowerCase(),
+          raw: String(o.option_text ?? ''),
+          odds: Number(o.odds ?? 1),
+        }));
+        const ht = String(m.home_team ?? '').toLowerCase();
+        const at = String(m.away_team ?? '').toLowerCase();
         const homeOpt =
-          (m.bet_options ?? []).find((o) => o.option_text?.toLowerCase().includes('home')) ||
-          (m.bet_options ?? [])[0];
+          opts.find((o) =>
+            o.text.includes('home') ||
+            o.text.includes('thuis') ||
+            o.text.includes('h1') ||
+            o.text.includes('avc') ||
+            (ht && o.text.includes(ht))
+          ) ?? opts[0];
         const awayOpt =
-          (m.bet_options ?? []).find((o) => o.option_text?.toLowerCase().includes('away')) ||
-          (m.bet_options ?? [])[1];
+          opts.find((o) =>
+            o.text.includes('away') ||
+            o.text.includes('uit') ||
+            o.text.includes('h2') ||
+            o.text.includes('out') ||
+            (at && o.text.includes(at))
+          ) ?? opts[1];
         const baseIds = [homeOpt?.id, awayOpt?.id].filter(Boolean);
-        const extraOptions = (m.bet_options ?? [])
+        const extraOptions = opts
           .filter((o) => !baseIds.includes(o.id))
-          .map((o) => ({ id: o.id as any, label: o.option_text as any, odds: o.odds as any }));
+          .map((o) => ({ id: o.id as any, label: o.raw as any, odds: o.odds as any }));
         return {
           id: idx + 1,
           homeTeam: (m.home_team as any) ?? 'Thuis',
