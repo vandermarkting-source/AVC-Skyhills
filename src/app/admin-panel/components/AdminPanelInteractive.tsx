@@ -404,16 +404,17 @@ const AdminPanelInteractive = () => {
 
     for (const b of bets ?? []) {
       if (b.bet_option_id === winningOptionId) {
-        const payout = Math.round((b.stake as number) * winningOdds);
+        const gross = Math.round((b.stake as number) * winningOdds);
+        const profit = Math.max(gross - (b.stake as number), 0);
         await (supabase as any)
           .from('bets')
-          .update({ status: 'won', actual_payout: payout, settled_at: new Date().toISOString() })
+          .update({ status: 'won', actual_payout: profit, settled_at: new Date().toISOString() })
           .eq('id', b.id);
         let rpcError: Error | null = null;
         try {
           const { error } = await (supabase as any).rpc('update_user_balance', {
             p_user_id: b.user_id,
-            p_amount: payout,
+            p_amount: profit,
           });
           rpcError = error ?? null;
         } catch (e) {
@@ -425,7 +426,7 @@ const AdminPanelInteractive = () => {
             .select('points_balance')
             .eq('id', b.user_id)
             .single();
-          const newBalance = ((curr?.points_balance as number) ?? 0) + payout;
+          const newBalance = ((curr?.points_balance as number) ?? 0) + profit;
           await (supabase as any)
             .from('user_profiles')
             .update({ points_balance: newBalance })
@@ -433,7 +434,7 @@ const AdminPanelInteractive = () => {
         }
         await transactionService.addTransaction({
           user_id: b.user_id,
-          amount: payout,
+          amount: profit,
           transaction_type: 'win_payout',
           description: 'Uitbetaling winst',
           bet_id: b.id,
@@ -443,11 +444,33 @@ const AdminPanelInteractive = () => {
           .from('bets')
           .update({ status: 'lost', actual_payout: 0, settled_at: new Date().toISOString() })
           .eq('id', b.id);
+        let rpcError: Error | null = null;
+        try {
+          const { error } = await (supabase as any).rpc('update_user_balance', {
+            p_user_id: b.user_id,
+            p_amount: -(b.stake as number),
+          });
+          rpcError = error ?? null;
+        } catch (e) {
+          rpcError = e as Error;
+        }
+        if (rpcError) {
+          const { data: curr } = await (supabase as any)
+            .from('user_profiles')
+            .select('points_balance')
+            .eq('id', b.user_id)
+            .single();
+          const newBalance = ((curr?.points_balance as number) ?? 0) - (b.stake as number);
+          await (supabase as any)
+            .from('user_profiles')
+            .update({ points_balance: newBalance })
+            .eq('id', b.user_id);
+        }
         await transactionService.addTransaction({
           user_id: b.user_id,
-          amount: 0,
+          amount: -(b.stake as number),
           transaction_type: 'loss_settle',
-          description: 'Afrekening verlies',
+          description: 'Afrekening verlies (inzet afgeschreven)',
           bet_id: b.id,
         });
       }

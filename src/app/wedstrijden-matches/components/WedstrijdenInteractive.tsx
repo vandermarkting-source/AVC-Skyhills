@@ -35,6 +35,8 @@ const WedstrijdenInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const { user, profile, refreshProfile } = useAuth();
   const userPoints = profile?.pointsBalance ?? 0;
+  const [reservedPoints, setReservedPoints] = useState(0);
+  const [isPlacing, setIsPlacing] = useState(false);
   const [selectedBet, setSelectedBet] = useState<{
     matchId: number;
     homeTeam: string;
@@ -77,19 +79,31 @@ const WedstrijdenInteractive = () => {
   const handleConfirmBet = async (stake: number) => {
     if (!selectedBet || !user) return;
     if (!selectedBet.betOptionId) return;
+    if (isPlacing) return;
+    setIsPlacing(true);
     const payout = stake * selectedBet.odds;
-    await betService.placeBet({
+    const res = await betService.placeBet({
       user_id: user.id,
       bet_option_id: selectedBet.betOptionId,
       stake,
       potential_payout: payout,
       status: 'pending',
     } as any);
+    if (res.error) {
+      setSuccessMessage(res.error.message || 'Plaatsen mislukt');
+      setShowBetSlip(false);
+      setShowSuccess(true);
+      setIsPlacing(false);
+      return;
+    }
     await refreshProfile();
+    const sum = await betService.getReservedStakeSum(user.id);
+    setReservedPoints(sum.total);
     setPotentialWin(payout);
     setSuccessMessage(`Je hebt ${stake.toFixed(2)} punten ingezet`);
     setShowBetSlip(false);
     setShowSuccess(true);
+    setIsPlacing(false);
   };
 
   const handleFilterChange = useCallback((newFilters: FilterState) => {
@@ -201,7 +215,17 @@ const WedstrijdenInteractive = () => {
     loadMatches();
   }, []);
 
+  useEffect(() => {
+    const loadReserved = async () => {
+      if (!user) return;
+      const sum = await betService.getReservedStakeSum(user.id);
+      setReservedPoints(sum.total);
+    };
+    loadReserved();
+  }, [user]);
+
   const filteredMatches = isHydrated ? getFilteredMatches() : [];
+  const availablePoints = Math.max(userPoints - reservedPoints, 0);
 
   if (!isHydrated) {
     return (
@@ -292,7 +316,7 @@ const WedstrijdenInteractive = () => {
         isOpen={showBetSlip}
         onClose={() => setShowBetSlip(false)}
         bet={selectedBet}
-        userPoints={userPoints}
+        userPoints={availablePoints}
         onConfirmBet={handleConfirmBet}
       />
 

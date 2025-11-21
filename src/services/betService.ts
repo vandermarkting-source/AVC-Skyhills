@@ -15,6 +15,33 @@ interface BetsResponse {
 
 export const betService = {
   async placeBet(bet: Omit<InsertBet, 'id' | 'placed_at'>): Promise<BetResponse> {
+    const { count: dupCount } = await (supabase as any)
+      .from('bets')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', bet.user_id)
+      .eq('bet_option_id', bet.bet_option_id)
+      .eq('status', 'pending');
+    if ((dupCount ?? 0) > 0) {
+      return { data: null, error: new Error('Je hebt deze weddenschap al geplaatst') };
+    }
+
+    const { data: profile } = await (supabase as any)
+      .from('user_profiles')
+      .select('points_balance')
+      .eq('id', bet.user_id)
+      .single();
+    const balance = ((profile?.points_balance as number) ?? 0) as number;
+    const { data: pending } = await (supabase as any)
+      .from('bets')
+      .select('stake')
+      .eq('user_id', bet.user_id)
+      .eq('status', 'pending');
+    const reserved = (pending ?? []).reduce((s: number, b: any) => s + (b?.stake ?? 0), 0);
+    const available = balance - reserved;
+    if (bet.stake > available) {
+      return { data: null, error: new Error('Onvoldoende punten beschikbaar voor inzet') };
+    }
+
     const { data, error } = await (supabase as any)
       .from('bets')
       .insert(bet as any)
@@ -22,12 +49,11 @@ export const betService = {
       .single();
 
     if (!error && data) {
-      await userService.adjustPointsBalance(bet.user_id, -bet.stake);
       await transactionService.addTransaction({
         user_id: bet.user_id,
-        amount: -bet.stake,
+        amount: 0,
         transaction_type: 'bet_placed',
-        description: 'Weddenschap geplaatst',
+        description: 'Weddenschap geplaatst (punten gereserveerd)',
         bet_id: data.id,
       });
     }
@@ -97,5 +123,14 @@ export const betService = {
       .eq('status', 'pending')
       .order('placed_at', { ascending: false });
     return { data, error };
+  },
+  async getReservedStakeSum(userId: string): Promise<{ total: number }> {
+    const { data } = await (supabase as any)
+      .from('bets')
+      .select('stake')
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+    const total = (data ?? []).reduce((s: number, b: any) => s + (b?.stake ?? 0), 0);
+    return { total };
   },
 };

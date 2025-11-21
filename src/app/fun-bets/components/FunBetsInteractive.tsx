@@ -59,6 +59,8 @@ const FunBetsInteractive = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const { user, profile, refreshProfile } = useAuth();
   const userPoints = profile?.pointsBalance ?? 0;
+  const [reservedPoints, setReservedPoints] = useState(0);
+  const [isPlacing, setIsPlacing] = useState(false);
   const [activeBets, setActiveBets] = useState<ActiveBet[]>([]);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
@@ -176,6 +178,15 @@ const FunBetsInteractive = () => {
     loadActive();
   }, [user]);
 
+  useEffect(() => {
+    const loadReserved = async () => {
+      if (!user) return;
+      const sum = await betService.getReservedStakeSum(user.id);
+      setReservedPoints(sum.total);
+    };
+    loadReserved();
+  }, [user]);
+
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 3000);
@@ -186,10 +197,13 @@ const FunBetsInteractive = () => {
       showNotification('error', 'Log in om te wedden');
       return;
     }
-    if (stake > userPoints) {
+    const available = Math.max(userPoints - reservedPoints, 0);
+    if (stake > available) {
       showNotification('error', 'Onvoldoende punten beschikbaar');
       return;
     }
+    if (isPlacing) return;
+    setIsPlacing(true);
 
     const bet = funBets.find((b) => b.id === betId);
     const option = bet?.options.find((o) => o.id === optionId);
@@ -205,6 +219,7 @@ const FunBetsInteractive = () => {
     } as any);
     if (error) {
       showNotification('error', 'Plaatsen mislukt');
+      setIsPlacing(false);
       return;
     }
 
@@ -221,7 +236,10 @@ const FunBetsInteractive = () => {
       },
     ]);
     await refreshProfile();
+    const sum = await betService.getReservedStakeSum(user.id);
+    setReservedPoints(sum.total);
     showNotification('success', `Weddenschap geplaatst! ${stake} punten ingezet.`);
+    setIsPlacing(false);
   };
 
   const filteredBets =
@@ -315,7 +333,7 @@ const FunBetsInteractive = () => {
                     <FunBetCard
                       key={bet.id}
                       bet={bet}
-                      userPoints={userPoints}
+                      userPoints={Math.max(userPoints - reservedPoints, 0)}
                       onPlaceBet={handlePlaceBet}
                     />
                   ))}
