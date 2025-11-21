@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary Colors */
+    --color-primary: #f59c00; /* orange-500 */
+    --color-primary-foreground: #ffffff; /* white */
+    --color-secondary: #ff7b00; /* orange-600 */
+    --color-secondary-foreground: #ffffff; /* white */
+    --color-accent: #00a8cc; /* cyan-600 */
+    --color-accent-foreground: #ffffff; /* white */
+
+    /* Background Colors */
+    --color-background: #fafafa; /* gray-50 */
+    --color-foreground: #222222; /* gray-900 */
+    --color-surface: #ffffff; /* white */
+
+    /* Text Colors */
+    --color-text-primary: #222222; /* gray-900 */
+    --color-text-secondary: #666666; /* gray-600 */
+
+    /* Status Colors */
+    --color-success: #22c55e; /* green-500 */
+    --color-success-foreground: #ffffff; /* white */
+    --color-warning: #f59e0b; /* amber-500 */
+    --color-warning-foreground: #ffffff; /* white */
+    --color-error: #ef4444; /* red-500 */
+    --color-error-foreground: #ffffff; /* white */
+    --color-destructive: #ef4444; /* red-500 */
+    --color-destructive-foreground: #ffffff; /* white */
+
+    /* UI Element Colors */
+    --color-border: #e5e5e5; /* gray-300 */
+    --color-input: #ffffff; /* white */
+    --color-ring: #f59c00; /* orange-500 */
+    --color-card: #ffffff; /* white */
+    --color-card-foreground: #222222; /* gray-900 */
+    --color-popover: #ffffff; /* white */
+    --color-popover-foreground: #222222; /* gray-900 */
+    --color-muted: #f5f5f5; /* gray-100 */
+    --color-muted-foreground: #666666; /* gray-600 */
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-data {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-subtle {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Transition utilities */
+  .transition-micro {
+    transition: all 200ms ease-out;
+  }
+
+  .transition-disclosure {
+    transition: height 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Scale utilities */
+  .scale-micro {
+    transform: scale(1.02);
+  }
+
+  /* Shadow utilities */
+  .shadow-card {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-modal {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
