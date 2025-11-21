@@ -8,7 +8,7 @@ interface TransactionsResponse {
 
 export const transactionService = {
   async getUserTransactions(userId: string, limit: number = 50): Promise<TransactionsResponse> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('transactions')
       .select('*')
       .eq('user_id', userId)
@@ -22,7 +22,7 @@ export const transactionService = {
     userId: string,
     transactionType: string
   ): Promise<TransactionsResponse> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('transactions')
       .select('*')
       .eq('user_id', userId)
@@ -39,9 +39,9 @@ export const transactionService = {
     description: string;
     bet_id?: string | null;
   }): Promise<TransactionsResponse> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('transactions')
-      .insert({ ...payload })
+      .insert({ ...payload } as any)
       .select('*');
     return { data, error };
   },

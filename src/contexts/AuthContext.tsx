@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    supabase.auth.getSession().then((res: { data: { session: Session | null } }) => {
+    (supabase as any).auth.getSession().then((res: { data: { session: Session | null } }) => {
       const session = res.data.session;
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -32,22 +32,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
+    } = (supabase as any).auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadUserProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
-    });
+    );
 
     return () => subscription.unsubscribe();
   }, [enabled]);
 
   useEffect(() => {
     if (!enabled || !user) return;
-    const ch = supabase
+    const ch = (supabase as any)
       .channel(`user_profile_updates_${user.id}`)
       .on(
         'postgres_changes',
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       try {
-        supabase.removeChannel(ch);
+        (supabase as any).removeChannel(ch);
       } catch (e) {
         void e;
       }
@@ -78,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
@@ -122,9 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof updates.fullName === 'string') payload.full_name = updates.fullName;
       if (typeof updates.avatarUrl === 'string') payload.avatar_url = updates.avatarUrl;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_profiles')
-        .update(payload)
+        .update(payload as any)
         .eq('id', user.id)
         .select()
         .single();
@@ -157,9 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const fileName = `${Date.now()}.${fileExt ?? 'jpg'}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file, {
-        upsert: true,
-      });
+      const { error: uploadError } = await (supabase as any).storage
+        .from(bucket)
+        .upload(filePath, file, {
+          upsert: true,
+        });
       if (uploadError) {
         const toDataUrl = (f: File) =>
           new Promise<string>((resolve, reject) => {
@@ -178,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      const { data: urlData } = (supabase as any).storage.from(bucket).getPublicUrl(filePath);
       const publicUrl = urlData?.publicUrl ?? null;
       if (publicUrl) {
         await updateProfile({ avatarUrl: publicUrl });
@@ -195,9 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: new Error('Niet ingelogd of Supabase niet geconfigureerd') };
     }
     try {
-      const { error: authError } = await supabase.auth.updateUser({ email: newEmail });
+      const { error: authError } = await (supabase as any).auth.updateUser({ email: newEmail });
       if (authError) return { error: authError };
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('user_profiles')
         .update({ email: newEmail })
         .eq('id', user.id)
@@ -278,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!enabled) {
       return { error: null };
     }
-    const { error } = await supabase.auth.signOut();
+    const { error } = await (supabase as any).auth.signOut();
     return { error };
   };
 

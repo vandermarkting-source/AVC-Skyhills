@@ -15,7 +15,11 @@ interface BetsResponse {
 
 export const betService = {
   async placeBet(bet: Omit<InsertBet, 'id' | 'placed_at'>): Promise<BetResponse> {
-    const { data, error } = await supabase.from('bets').insert(bet).select().single();
+    const { data, error } = await (supabase as any)
+      .from('bets')
+      .insert(bet as any)
+      .select()
+      .single();
 
     if (!error && data) {
       await userService.adjustPointsBalance(bet.user_id, -bet.stake);

@@ -162,7 +162,7 @@ const WedstrijdenInteractive = () => {
             hour: '2-digit',
             minute: '2-digit',
           }),
-          competition: (m.competition as any) ?? 'Competitie',
+          competition: 'Competitie',
           status,
           odds: {
             home: (homeOpt?.odds as any) ?? 1,

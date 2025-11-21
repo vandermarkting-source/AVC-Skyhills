@@ -23,11 +23,15 @@ export const userService = {
       full_name: fullName,
       role: 'user',
     };
-    const { data, error } = await supabase.from('user_profiles').insert(payload).select().single();
+    const { data, error } = await (supabase as any)
+      .from('user_profiles')
+      .insert(payload as any)
+      .select()
+      .single();
     return { data, error };
   },
   async getProfile(userId: string): Promise<UserProfileResponse> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('user_profiles')
       .select('*')
       .eq('id', userId)
@@ -36,7 +40,7 @@ export const userService = {
   },
 
   async getLeaderboard(limit: number = 20): Promise<UserProfilesResponse> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('user_profiles')
       .select('*')
       .order('points_balance', { ascending: false })
@@ -48,9 +52,9 @@ export const userService = {
     userId: string,
     updates: Partial<Omit<UserProfile, 'id' | 'email' | 'created_at' | 'updated_at'>>
   ): Promise<UserProfileResponse> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('user_profiles')
-      .update(updates)
+      .update(updates as any)
       .eq('id', userId)
       .select()
       .single();
@@ -97,19 +101,19 @@ export const userService = {
 
   async adjustPointsBalance(userId: string, delta: number): Promise<{ error: Error | null }> {
     // Try RPC first
-    const { error: rpcError } = await supabase.rpc('update_user_balance', {
+    const { error: rpcError } = await (supabase as any).rpc('update_user_balance', {
       p_user_id: userId,
       p_amount: delta,
     });
     if (!rpcError) return { error: null };
     // Fallback: read current and update
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('user_profiles')
       .select('points_balance')
       .eq('id', userId)
       .single();
-    const current = (data?.points_balance as number | undefined) ?? 0;
-    const { error } = await supabase
+    const current = ((data as any)?.points_balance as number | undefined) ?? 0;
+    const { error } = await (supabase as any)
       .from('user_profiles')
       .update({ points_balance: current + delta })
       .eq('id', userId);

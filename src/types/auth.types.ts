@@ -12,6 +12,7 @@ export interface AuthContextType {
     error: Error | null;
   }>;
   updateAvatar: (file: File) => Promise<{ url: string | null; error: Error | null }>;
+  updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
 }
 
 export interface AuthResponse {
