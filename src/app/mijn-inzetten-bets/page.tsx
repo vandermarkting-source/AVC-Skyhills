@@ -57,75 +57,94 @@ export default function MijnInzettenBetsPage() {
 
   useEffect(() => {
     const refreshRecent = async () => {
-      const { data, error } = await (supabase as any)
-        .from('bets')
-        .select(
+      try {
+        const { data, error } = await (supabase as any)
+          .from('bets')
+          .select(
+            `
+            id, user_id, stake, potential_payout, status, placed_at,
+            bet_options!inner (
+              id, option_text,
+              matches (id, home_team, away_team),
+              fun_bets (id, title)
+            ),
+            user_profiles:user_id (id, full_name)
           `
-          id, user_id, stake, potential_payout, status, placed_at,
-          bet_options!inner (
-            id, option_text,
-            matches (id, home_team, away_team),
-            fun_bets (id, title)
-          ),
-          user_profiles:user_id (id, full_name)
-        `
-        )
-        .order('placed_at', { ascending: false })
-        .limit(30);
-      if (!error) {
-        const recMapped: ListBet[] = (data ?? []).map((b: any) => {
-          const isMatch = !!b.bet_options?.matches?.id;
-          const title = isMatch
-            ? `${b.bet_options?.matches?.home_team ?? ''} vs ${b.bet_options?.matches?.away_team ?? ''}`
-            : (b.bet_options?.fun_bets?.title ?? 'Fun Bet');
-          return {
-            id: b.id,
-            title,
-            option: b.bet_options?.option_text ?? '',
-            stake: b.stake,
-            potentialWin: b.potential_payout,
-            status: b.status,
-            emoji: isMatch ? '🏐' : '🎯',
-            userName: b.user_profiles?.full_name ?? 'Onbekend',
-          };
-        });
-        setRecentBets(recMapped);
+          )
+          .order('placed_at', { ascending: false })
+          .limit(30);
+        if (!error) {
+          const recMapped: ListBet[] = (data ?? []).map((b: any) => {
+            const isMatch = !!b.bet_options?.matches?.id;
+            const title = isMatch
+              ? `${b.bet_options?.matches?.home_team ?? ''} vs ${b.bet_options?.matches?.away_team ?? ''}`
+              : (b.bet_options?.fun_bets?.title ?? 'Fun Bet');
+            return {
+              id: b.id,
+              title,
+              option: b.bet_options?.option_text ?? '',
+              stake: b.stake,
+              potentialWin: b.potential_payout,
+              status: b.status,
+              emoji: isMatch ? '🏐' : '🎯',
+              userName: b.user_profiles?.full_name ?? 'Onbekend',
+            };
+          });
+          setRecentBets(recMapped);
 
-        const now = new Date();
-        const { data: funs } = await (supabase as any)
-          .from('fun_bets')
-          .select('id')
-          .eq('is_settled', false);
-        const { data: matches } = await (supabase as any)
-          .from('matches')
-          .select('id')
-          .in('status', ['upcoming', 'live']);
-        const funIds = (funs ?? []).map((f: any) => f.id);
-        const matchIds = (matches ?? []).map((m: any) => m.id);
-        let optionIds: string[] = [];
-        if (matchIds.length) {
-          const { data: mo } = await (supabase as any)
-            .from('bet_options')
+          const now = new Date();
+          const { data: funs } = await (supabase as any)
+            .from('fun_bets')
             .select('id')
-            .in('match_id', matchIds);
-          optionIds = optionIds.concat((mo ?? []).map((o: any) => o.id));
-        }
-        if (funIds.length) {
-          const { data: fo } = await (supabase as any)
-            .from('bet_options')
+            .eq('is_settled', false);
+          const { data: matches } = await (supabase as any)
+            .from('matches')
             .select('id')
-            .in('fun_bet_id', funIds);
-          optionIds = optionIds.concat((fo ?? []).map((o: any) => o.id));
+            .in('status', ['upcoming', 'live']);
+          const funIds = (funs ?? []).map((f: any) => f.id);
+          const matchIds = (matches ?? []).map((m: any) => m.id);
+          let optionIds: string[] = [];
+          if (matchIds.length) {
+            const { data: mo } = await (supabase as any)
+              .from('bet_options')
+              .select('id')
+              .in('match_id', matchIds);
+            optionIds = optionIds.concat((mo ?? []).map((o: any) => o.id));
+          }
+          if (funIds.length) {
+            const { data: fo } = await (supabase as any)
+              .from('bet_options')
+              .select('id')
+              .in('fun_bet_id', funIds);
+            optionIds = optionIds.concat((fo ?? []).map((o: any) => o.id));
+          }
+          let total = 0;
+          if (optionIds.length) {
+            const { data: bets } = await (supabase as any)
+              .from('bets')
+              .select('stake')
+              .in('bet_option_id', optionIds);
+            total = (bets ?? []).reduce((s: number, bb: any) => s + (bb?.stake ?? 0), 0);
+          }
+          setTotalToday(total);
+        } else {
+          throw error;
         }
-        let total = 0;
-        if (optionIds.length) {
-          const { data: bets } = await (supabase as any)
-            .from('bets')
-            .select('stake')
-            .in('bet_option_id', optionIds);
-          total = (bets ?? []).reduce((s: number, bb: any) => s + (bb?.stake ?? 0), 0);
-        }
-        setTotalToday(total);
+      } catch (_) {
+        const resp = await fetch(`/api/recent-bets?ts=${Date.now()}`, { cache: 'no-store' });
+        const json = await resp.json();
+        const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          option: b.option,
+          stake: b.stake,
+          potentialWin: b.potentialWin,
+          status: b.status,
+          emoji: b.title?.includes('vs') ? '🏐' : '🎯',
+          userName: b.userName,
+        }));
+        setRecentBets(recMapped);
+        setTotalToday(Number(json?.totalToday ?? 0));
       }
     };
 
