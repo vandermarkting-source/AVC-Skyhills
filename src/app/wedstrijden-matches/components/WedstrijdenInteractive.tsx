@@ -166,24 +166,41 @@ const WedstrijdenInteractive = () => {
         }));
         const ht = String(m.home_team ?? '').toLowerCase();
         const at = String(m.away_team ?? '').toLowerCase();
-        const homeOpt =
-          opts.find(
-            (o) =>
-              o.text.includes('home') ||
-              o.text.includes('thuis') ||
-              o.text.includes('h1') ||
-              o.text.includes('avc') ||
-              (ht && o.text.includes(ht))
-          ) ?? opts[0];
-        const awayOpt =
-          opts.find(
-            (o) =>
-              o.text.includes('away') ||
-              o.text.includes('uit') ||
-              o.text.includes('h2') ||
-              o.text.includes('out') ||
-              (at && o.text.includes(at))
-          ) ?? opts[1];
+        const mmOpts = opts.filter(
+          (o) => o.text.includes('matchwinnaar') || o.text.includes('home wint') || o.text.includes('away wint')
+        );
+        let homeOpt = mmOpts.find((o) => o.text.includes('home wint') || o.text.includes('thuis wint')) ?? null;
+        let awayOpt = mmOpts.find((o) => o.text.includes('away wint') || o.text.includes('uit wint')) ?? null;
+        if (!homeOpt) {
+          homeOpt =
+            opts.find(
+              (o) =>
+                o.text.includes('matchwinnaar') && (o.text.includes(ht) || o.text.includes('thuis'))
+            ) ??
+            opts.find(
+              (o) =>
+                o.text.includes('home') ||
+                o.text.includes('thuis') ||
+                o.text.includes('h1') ||
+                o.text.includes('avc') ||
+                (ht && o.text.includes(ht))
+            ) ?? opts[0];
+        }
+        if (!awayOpt) {
+          awayOpt =
+            opts.find(
+              (o) =>
+                o.text.includes('matchwinnaar') && (o.text.includes(at) || o.text.includes('uit'))
+            ) ??
+            opts.find(
+              (o) =>
+                o.text.includes('away') ||
+                o.text.includes('uit') ||
+                o.text.includes('h2') ||
+                o.text.includes('out') ||
+                (at && o.text.includes(at))
+            ) ?? opts[1];
+        }
         const baseIds = [homeOpt?.id, awayOpt?.id].filter(Boolean);
         const extraOptions = opts
           .filter((o) => !baseIds.includes(o.id))

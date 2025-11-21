@@ -147,22 +147,80 @@ const MatchCard = ({ match, onPlaceBet }: MatchCardProps) => {
               </button>
             </div>
             {showMore && (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                {match.extraOptions.map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => onPlaceBet(match.id, 'extra', opt.odds, opt.id)}
-                    className="p-3 rounded-sm border-2 border-primary bg-surface hover:bg-primary hover:scale-105 transition-all"
-                  >
-                    <div className="text-xs text-text-secondary mb-1">{opt.label}</div>
-                    <div className="font-data font-bold text-xl text-primary">
-                      {opt.odds.toFixed(2)}
-                    </div>
-                  </button>
-                ))}
-                {match.extraOptions.length === 0 && (
-                  <div className="text-sm text-text-secondary">Geen extra weddenschappen</div>
-                )}
+              <div className="mt-3 space-y-4">
+                {(() => {
+                  const parseScore = (label: string) => {
+                    const m = label.match(/(\d+)\s*-\s*(\d+)/);
+                    if (!m) return null;
+                    const a = parseInt(m[1], 10);
+                    const b = parseInt(m[2], 10);
+                    if (isNaN(a) || isNaN(b)) return null;
+                    return { a, b };
+                  };
+                  const setExtras = match.extraOptions.filter((o) => parseScore(o.label));
+                  const otherExtras = match.extraOptions.filter((o) => !parseScore(o.label));
+                  const homeSet = setExtras.filter((o) => {
+                    const s = parseScore(o.label)!;
+                    return s.a > s.b;
+                  });
+                  const awaySet = setExtras.filter((o) => {
+                    const s = parseScore(o.label)!;
+                    return s.b > s.a;
+                  });
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          {homeSet.map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => onPlaceBet(match.id, 'extra', opt.odds, opt.id)}
+                              className="w-full p-3 rounded-sm border-2 border-primary bg-surface hover:bg-primary hover:scale-105 transition-all"
+                            >
+                              <div className="text-xs text-text-secondary mb-1">{opt.label}</div>
+                              <div className="font-data font-bold text-xl text-primary">
+                                {opt.odds.toFixed(2)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <div>
+                          {awaySet.map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => onPlaceBet(match.id, 'extra', opt.odds, opt.id)}
+                              className="w-full p-3 rounded-sm border-2 border-primary bg-surface hover:bg-primary hover:scale-105 transition-all"
+                            >
+                              <div className="text-xs text-text-secondary mb-1">{opt.label}</div>
+                              <div className="font-data font-bold text-xl text-primary">
+                                {opt.odds.toFixed(2)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {otherExtras.length > 0 && (
+                        <div className="grid grid-cols-2 gap-3">
+                          {otherExtras.map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => onPlaceBet(match.id, 'extra', opt.odds, opt.id)}
+                              className="p-3 rounded-sm border-2 border-primary bg-surface hover:bg-primary hover:scale-105 transition-all"
+                            >
+                              <div className="text-xs text-text-secondary mb-1">{opt.label}</div>
+                              <div className="font-data font-bold text-xl text-primary">
+                                {opt.odds.toFixed(2)}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {match.extraOptions.length === 0 && (
+                        <div className="text-sm text-text-secondary">Geen extra weddenschappen</div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>
