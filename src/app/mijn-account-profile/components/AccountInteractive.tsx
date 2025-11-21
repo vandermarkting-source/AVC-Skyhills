@@ -150,7 +150,7 @@ const AccountInteractive = ({
         timestamp: new Date(t.created_at).toLocaleString('nl-NL'),
         details: t.bet_id ? `Bet ${t.bet_id}` : undefined,
       }));
-      setTransactions(mappedTx);
+      setTransactions(mappedTx as unknown as Transaction[]);
 
       const betsRes = await betService.getUserBets(userId);
       const mappedBets = (betsRes.data ?? []).map((b: any) => {

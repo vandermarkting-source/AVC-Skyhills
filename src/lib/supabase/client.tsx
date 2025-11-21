@@ -6,7 +6,9 @@ let cachedClient: SupabaseClient<Database> | null = null;
 function createStubClient(): SupabaseClient<Database> {
   return new Proxy({} as SupabaseClient<Database>, {
     get() {
-      throw new Error('Supabase niet geconfigureerd: ontbrekende NEXT_PUBLIC_SUPABASE_URL/ANON_KEY');
+      throw new Error(
+        'Supabase niet geconfigureerd: ontbrekende NEXT_PUBLIC_SUPABASE_URL/ANON_KEY'
+      );
     },
   }) as SupabaseClient<Database>;
 }

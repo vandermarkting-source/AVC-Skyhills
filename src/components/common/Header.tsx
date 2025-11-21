@@ -11,6 +11,7 @@ export default function Header() {
   const router = useRouter();
   const { user, profile, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,6 +63,24 @@ export default function Header() {
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            <button
+              className="md:hidden p-2 rounded-md hover:bg-muted focus:outline-none"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              aria-label="Menu"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-6 h-6 text-text-primary"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zm0 5.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75zm.75 4.5a.75.75 0 000 1.5h16.5a.75.75 0 000-1.5H3.75z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
             <div className="hidden md:flex items-center space-x-2 bg-accent/10 px-3 py-1.5 rounded-full">
               <span className="text-sm font-semibold text-accent">
                 {profile?.pointsBalance ?? 0} pts
@@ -114,6 +133,33 @@ export default function Header() {
             </div>
           </div>
         </div>
+        {showMobileMenu && (
+          <div className="md:hidden absolute left-0 right-0 top-[60px] bg-card border-t border-border shadow-lg z-50">
+            <nav className="flex flex-col p-4 space-y-2">
+              {navItems?.map((item) => (
+                <Link
+                  key={item?.href}
+                  href={item?.href}
+                  className={`text-base font-medium transition-colors ${
+                    pathname === item?.href
+                      ? 'text-primary'
+                      : 'text-text-secondary hover:text-primary'
+                  }`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  {item?.label}
+                </Link>
+              ))}
+              <Link
+                href="/mijn-account-profile"
+                className="text-base font-medium text-text-secondary hover:text-primary"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                Mijn Account
+              </Link>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );
