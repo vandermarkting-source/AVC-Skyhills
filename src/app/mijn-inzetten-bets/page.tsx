@@ -70,6 +70,35 @@ export default function MijnInzettenBetsPage() {
     load();
   }, [user]);
 
+  useEffect(() => {
+    const ch = (supabase as any)
+      .channel('recent_bets_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bets' }, async () => {
+        const resp = await fetch('/api/recent-bets');
+        const json = await resp.json();
+        const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          option: b.option,
+          stake: b.stake,
+          potentialWin: b.potentialWin,
+          status: b.status,
+          emoji: b.title?.includes('vs') ? '🏐' : '🎯',
+          userName: b.userName,
+        }));
+        setRecentBets(recMapped);
+        setTotalToday(Number(json?.totalToday ?? 0));
+      })
+      .subscribe();
+    return () => {
+      try {
+        (supabase as any).removeChannel(ch);
+      } catch (e) {
+        void e;
+      }
+    };
+  }, []);
+
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-background">
