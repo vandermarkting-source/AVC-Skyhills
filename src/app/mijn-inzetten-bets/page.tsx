@@ -91,16 +91,41 @@ export default function MijnInzettenBetsPage() {
         });
         setRecentBets(recMapped);
 
-        const startLocal = new Date();
-        startLocal.setHours(0, 0, 0, 0);
-        const endLocal = new Date(startLocal.getTime() + 24 * 60 * 60 * 1000);
-        const { data: today } = await (supabase as any)
-          .from('bets')
-          .select('stake, placed_at')
-          .gte('placed_at', startLocal.toISOString())
-          .lt('placed_at', endLocal.toISOString());
-        const total = (today ?? []).reduce((s: number, bb: any) => s + (bb?.stake ?? 0), 0);
-        setTotalToday(Number(total ?? 0));
+        const now = new Date();
+        const { data: funs } = await (supabase as any)
+          .from('fun_bets')
+          .select('id')
+          .eq('is_settled', false);
+        const { data: matches } = await (supabase as any)
+          .from('matches')
+          .select('id')
+          .in('status', ['upcoming', 'live']);
+        const funIds = (funs ?? []).map((f: any) => f.id);
+        const matchIds = (matches ?? []).map((m: any) => m.id);
+        let optionIds: string[] = [];
+        if (matchIds.length) {
+          const { data: mo } = await (supabase as any)
+            .from('bet_options')
+            .select('id')
+            .in('match_id', matchIds);
+          optionIds = optionIds.concat((mo ?? []).map((o: any) => o.id));
+        }
+        if (funIds.length) {
+          const { data: fo } = await (supabase as any)
+            .from('bet_options')
+            .select('id')
+            .in('fun_bet_id', funIds);
+          optionIds = optionIds.concat((fo ?? []).map((o: any) => o.id));
+        }
+        let total = 0;
+        if (optionIds.length) {
+          const { data: bets } = await (supabase as any)
+            .from('bets')
+            .select('stake')
+            .in('bet_option_id', optionIds);
+          total = (bets ?? []).reduce((s: number, bb: any) => s + (bb?.stake ?? 0), 0);
+        }
+        setTotalToday(total);
       }
     };
 
