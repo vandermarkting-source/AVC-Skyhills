@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import AppImage from '../ui/AppImage';
+import { betService } from '@/services/betService';
 
 export default function Header() {
   const pathname = usePathname();
@@ -12,6 +13,8 @@ export default function Header() {
   const { user, profile, signOut } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showPointsPanel, setShowPointsPanel] = useState(false);
+  const [reservedPoints, setReservedPoints] = useState(0);
 
   const handleSignOut = async () => {
     await signOut();
@@ -25,6 +28,19 @@ export default function Header() {
     { href: '/ranglijst-leaderboard', label: 'Ranglijst' },
     ...(profile?.role === 'admin' ? [{ href: '/admin-panel', label: 'Admin' }] : []),
   ];
+
+  useEffect(() => {
+    let mounted = true;
+    const loadReserved = async () => {
+      if (!user) return;
+      const sum = await betService.getReservedStakeSum(user.id);
+      if (mounted) setReservedPoints(sum.total);
+    };
+    loadReserved();
+    return () => {
+      mounted = false;
+    };
+  }, [user, showPointsPanel]);
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-card shadow-lg z-50">
@@ -64,6 +80,14 @@ export default function Header() {
           {/* User Menu */}
           <div className="flex items-center space-x-4">
             <button
+              className="md:hidden flex items-center space-x-2 bg-accent/10 px-3 py-1.5 rounded-full"
+              onClick={() => setShowPointsPanel(!showPointsPanel)}
+            >
+              <span className="text-sm font-semibold text-accent">
+                {(profile?.pointsBalance ?? 0)} pts
+              </span>
+            </button>
+            <button
               className="md:hidden p-2 rounded-md hover:bg-muted focus:outline-none"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               aria-label="Menu"
@@ -81,11 +105,14 @@ export default function Header() {
                 />
               </svg>
             </button>
-            <div className="hidden md:flex items-center space-x-2 bg-accent/10 px-3 py-1.5 rounded-full">
+            <button
+              className="hidden md:flex items-center space-x-2 bg-accent/10 px-3 py-1.5 rounded-full"
+              onClick={() => setShowPointsPanel(!showPointsPanel)}
+            >
               <span className="text-sm font-semibold text-accent">
                 {profile?.pointsBalance ?? 0} pts
               </span>
-            </div>
+            </button>
 
             <div className="relative">
               <button
@@ -133,6 +160,42 @@ export default function Header() {
             </div>
           </div>
         </div>
+        {showPointsPanel && (
+          <div className="md:hidden absolute left-0 right-0 top-[60px] bg-card border-t border-border shadow-lg z-50">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-text-secondary">Inzetbare punten</span>
+                <span className="font-data font-semibold text-success">
+                  {Math.max((profile?.pointsBalance ?? 0) - reservedPoints, 0).toLocaleString('nl-NL')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Ingezette punten</span>
+                <span className="font-data font-semibold text-warning">
+                  {reservedPoints.toLocaleString('nl-NL')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        {showPointsPanel && (
+          <div className="hidden md:block absolute right-0 top-[60px] bg-card border border-border rounded-md shadow-lg z-50">
+            <div className="p-4 w-64">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-text-secondary">Inzetbare punten</span>
+                <span className="font-data font-semibold text-success">
+                  {Math.max((profile?.pointsBalance ?? 0) - reservedPoints, 0).toLocaleString('nl-NL')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-text-secondary">Ingezette punten</span>
+                <span className="font-data font-semibold text-warning">
+                  {reservedPoints.toLocaleString('nl-NL')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
         {showMobileMenu && (
           <div className="md:hidden absolute left-0 right-0 top-[60px] bg-card border-t border-border shadow-lg z-50">
             <nav className="flex flex-col p-4 space-y-2">
