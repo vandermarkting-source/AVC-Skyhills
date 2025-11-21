@@ -171,9 +171,15 @@ export default function Header() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">Ingezette punten</span>
-                <span className="font-data font-semibold text-warning">
+                <button
+                  onClick={() => {
+                    setShowPointsPanel(false);
+                    router.push('/mijn-inzetten-bets');
+                  }}
+                  className="font-data font-semibold text-warning hover:underline"
+                >
                   {reservedPoints.toLocaleString('nl-NL')}
-                </span>
+                </button>
               </div>
             </div>
           </div>
@@ -189,9 +195,15 @@ export default function Header() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-text-secondary">Ingezette punten</span>
-                <span className="font-data font-semibold text-warning">
+                <button
+                  onClick={() => {
+                    setShowPointsPanel(false);
+                    router.push('/mijn-inzetten-bets');
+                  }}
+                  className="font-data font-semibold text-warning hover:underline"
+                >
                   {reservedPoints.toLocaleString('nl-NL')}
-                </span>
+                </button>
               </div>
             </div>
           </div>

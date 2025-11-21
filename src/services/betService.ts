@@ -133,4 +133,21 @@ export const betService = {
     const total = (data ?? []).reduce((s: number, b: any) => s + (b?.stake ?? 0), 0);
     return { total };
   },
+  async getRecentBets(limit: number = 20): Promise<BetsResponse> {
+    const { data, error } = await (supabase as any)
+      .from('bets')
+      .select(
+        `
+        *,
+        bet_options!inner (
+          *,
+          matches (*),
+          fun_bets (*)
+        )
+      `
+      )
+      .order('placed_at', { ascending: false })
+      .limit(limit);
+    return { data, error };
+  },
 };
