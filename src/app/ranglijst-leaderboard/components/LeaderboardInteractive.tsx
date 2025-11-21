@@ -57,6 +57,7 @@ const LeaderboardInteractive = () => {
       const { data: profiles } = await (supabase as any)
         .from('user_profiles')
         .select('*')
+        .neq('role', 'admin')
         .order('points_balance', { ascending: false })
         .limit(20);
       const built: Member[] = [];
