@@ -26,6 +26,7 @@ export default function Header() {
     { href: '/wedstrijden-matches', label: 'Wedstrijden' },
     { href: '/fun-bets', label: 'Fun Bets' },
     { href: '/ranglijst-leaderboard', label: 'Ranglijst' },
+    { href: '/mijn-inzetten-bets', label: 'Inzetten' },
     ...(profile?.role === 'admin' ? [{ href: '/admin-panel', label: 'Admin' }] : []),
   ];
 

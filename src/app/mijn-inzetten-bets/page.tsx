@@ -5,6 +5,7 @@ import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { useAuth } from '@/contexts/AuthContext';
 import { betService } from '@/services/betService';
+import { supabase } from '@/lib/supabase/client';
 
 interface ListBet {
   id: string;
@@ -14,6 +15,7 @@ interface ListBet {
   potentialWin: number;
   status: 'pending' | 'won' | 'lost' | 'cancelled';
   emoji: string;
+  userName?: string;
 }
 
 export default function MijnInzettenBetsPage() {
@@ -50,6 +52,17 @@ export default function MijnInzettenBetsPage() {
       setMyBets(myMapped);
 
       const { data: recent } = await betService.getRecentBets(20);
+      const userIds = Array.from(new Set((recent ?? []).map((b: any) => b.user_id).filter(Boolean)));
+      let nameMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: users } = await (supabase as any)
+          .from('user_profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+        for (const u of users ?? []) {
+          nameMap[u.id as string] = (u.full_name as string) ?? '';
+        }
+      }
       const recMapped: ListBet[] = (recent ?? []).map((b: any) => {
         const isMatch = !!b.bet_options?.match_id;
         const title = isMatch
@@ -65,6 +78,7 @@ export default function MijnInzettenBetsPage() {
           potentialWin: b.potential_payout,
           status: b.status,
           emoji,
+          userName: nameMap[b.user_id as string] ?? 'Onbekend',
         };
       });
       setRecentBets(recMapped);
@@ -149,6 +163,7 @@ export default function MijnInzettenBetsPage() {
                     </span>
                     <div>
                       <div className="font-medium text-text-primary">{b.title}</div>
+                      <div className="text-xs text-text-secondary">Door {b.userName}</div>
                       <div className="text-sm text-text-secondary">Optie: {b.option}</div>
                     </div>
                   </div>
