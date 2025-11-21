@@ -10,6 +10,7 @@ import Icon from '@/components/ui/AppIcon';
 import { matchService } from '@/services/matchService';
 import { betService } from '@/services/betService';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase/client';
 
 interface Match {
   id: number;
@@ -222,6 +223,28 @@ const WedstrijdenInteractive = () => {
       setReservedPoints(sum.total);
     };
     loadReserved();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const ch = (supabase as any)
+      .channel(`matches_bets_live_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bets', filter: `user_id=eq.${user.id}` },
+        async () => {
+          const sum = await betService.getReservedStakeSum(user.id);
+          setReservedPoints(sum.total);
+        }
+      )
+      .subscribe();
+    return () => {
+      try {
+        (supabase as any).removeChannel(ch);
+      } catch (e) {
+        void e;
+      }
+    };
   }, [user]);
 
   const filteredMatches = isHydrated ? getFilteredMatches() : [];

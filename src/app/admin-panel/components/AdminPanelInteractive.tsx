@@ -302,11 +302,33 @@ const AdminPanelInteractive = () => {
           matchId = (inserted as any)?.id ?? null;
         }
         if (matchId) {
-          for (const opt of data.options) {
+          const hasHome = data.options.some((o) => {
+            const t = o.label.trim().toLowerCase();
+            return t === 'thuis' || t === 'home' || t === home.trim().toLowerCase();
+          });
+          const hasAway = data.options.some((o) => {
+            const t = o.label.trim().toLowerCase();
+            return t === 'uit' || t === 'away' || t === away.trim().toLowerCase();
+          });
+          const baseOptions = [
+            !hasHome ? { id: 'base-home', label: home, odds: '' } : null,
+            !hasAway ? { id: 'base-away', label: away, odds: '' } : null,
+          ].filter(Boolean) as Array<{ id: string; label: string; odds: string }>;
+          const allOptions = [...baseOptions, ...data.options];
+          for (const opt of allOptions) {
+            const raw = String(opt.label ?? '').trim();
+            const lower = raw.toLowerCase();
+            const labelToUse =
+              lower === 'thuis' || lower === 'home'
+                ? home
+                : lower === 'uit' || lower === 'away'
+                  ? away
+                  : raw;
+            const oddsNum = parseFloat(String(opt.odds ?? ''));
             await supabase.from('bet_options').insert({
               match_id: matchId,
-              option_text: opt.label,
-              odds: parseFloat(opt.odds),
+              option_text: labelToUse,
+              odds: Number.isFinite(oddsNum) ? oddsNum : 1,
               is_winner: false,
             } as any);
           }

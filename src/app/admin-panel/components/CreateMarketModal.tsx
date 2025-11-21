@@ -35,8 +35,8 @@ const CreateMarketModal = ({ isOpen, onClose, onSubmit, editData }: CreateMarket
     homeTeam: '',
     awayTeam: '',
     options: [
-      { id: '1', label: 'Home', odds: '' },
-      { id: '2', label: 'Away', odds: '' },
+      { id: '1', label: 'Thuis', odds: '' },
+      { id: '2', label: 'Uit', odds: '' },
     ],
   });
 
@@ -56,8 +56,8 @@ const CreateMarketModal = ({ isOpen, onClose, onSubmit, editData }: CreateMarket
         homeTeam: '',
         awayTeam: '',
         options: [
-          { id: '1', label: 'Home', odds: '' },
-          { id: '2', label: 'Away', odds: '' },
+          { id: '1', label: 'Thuis', odds: '' },
+          { id: '2', label: 'Uit', odds: '' },
         ],
       });
     }
@@ -83,13 +83,14 @@ const CreateMarketModal = ({ isOpen, onClose, onSubmit, editData }: CreateMarket
   };
 
   const addSetResultTemplate = () => {
+    const baseId = Date.now();
     const template = [
-      { id: `sr-${Date.now()}-h-3-0`, label: 'Set resultaat 3-0 (Thuis)', odds: '2.80' },
-      { id: `sr-${Date.now()}-h-3-1`, label: 'Set resultaat 3-1 (Thuis)', odds: '2.60' },
-      { id: `sr-${Date.now()}-h-3-2`, label: 'Set resultaat 3-2 (Thuis)', odds: '3.40' },
-      { id: `sr-${Date.now()}-a-0-3`, label: 'Set resultaat 0-3 (Uit)', odds: '3.20' },
-      { id: `sr-${Date.now()}-a-1-3`, label: 'Set resultaat 1-3 (Uit)', odds: '2.90' },
-      { id: `sr-${Date.now()}-a-2-3`, label: 'Set resultaat 2-3 (Uit)', odds: '3.60' },
+      { id: `sr-${baseId}-4-0`, label: '4-0', odds: '' },
+      { id: `sr-${baseId}-3-1`, label: '3-1', odds: '' },
+      { id: `sr-${baseId}-3-2`, label: '3-2', odds: '' },
+      { id: `sr-${baseId}-2-3`, label: '2-3', odds: '' },
+      { id: `sr-${baseId}-1-3`, label: '1-3', odds: '' },
+      { id: `sr-${baseId}-0-4`, label: '0-4', odds: '' },
     ];
     const existingLabels = new Set(formData.options.map((o) => o.label.trim().toLowerCase()));
     const toAdd = template.filter((t) => !existingLabels.has(t.label.trim().toLowerCase()));
@@ -240,7 +241,7 @@ const CreateMarketModal = ({ isOpen, onClose, onSubmit, editData }: CreateMarket
                   className="flex items-center gap-1 text-sm text-accent hover:text-secondary transition-micro"
                 >
                   <Icon name="SparklesIcon" size={16} />
-                  <span>Setresultaat sjabloon</span>
+                  <span>Standaard setresultaat opties</span>
                 </button>
               </div>
             </div>
