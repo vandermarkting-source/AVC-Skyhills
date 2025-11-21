@@ -85,7 +85,7 @@ export default function Header() {
               onClick={() => setShowPointsPanel(!showPointsPanel)}
             >
               <span className="text-sm font-semibold text-accent">
-                {(profile?.pointsBalance ?? 0)} pts
+                {profile?.pointsBalance ?? 0} pts
               </span>
             </button>
             <button
@@ -167,7 +167,9 @@ export default function Header() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-text-secondary">Inzetbare punten</span>
                 <span className="font-data font-semibold text-success">
-                  {Math.max((profile?.pointsBalance ?? 0) - reservedPoints, 0).toLocaleString('nl-NL')}
+                  {Math.max((profile?.pointsBalance ?? 0) - reservedPoints, 0).toLocaleString(
+                    'nl-NL'
+                  )}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -191,7 +193,9 @@ export default function Header() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-text-secondary">Inzetbare punten</span>
                 <span className="font-data font-semibold text-success">
-                  {Math.max((profile?.pointsBalance ?? 0) - reservedPoints, 0).toLocaleString('nl-NL')}
+                  {Math.max((profile?.pointsBalance ?? 0) - reservedPoints, 0).toLocaleString(
+                    'nl-NL'
+                  )}
                 </span>
               </div>
               <div className="flex items-center justify-between">

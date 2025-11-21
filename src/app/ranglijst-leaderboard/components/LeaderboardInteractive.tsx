@@ -97,6 +97,60 @@ const LeaderboardInteractive = () => {
     loadLeaderboard();
   }, []);
 
+  useEffect(() => {
+    const ch = (supabase as any)
+      .channel('leaderboard_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bets' }, async () => {
+        const { data: profiles } = await (supabase as any)
+          .from('user_profiles')
+          .select('*')
+          .neq('role', 'admin')
+          .order('points_balance', { ascending: false })
+          .limit(20);
+        const built: Member[] = [];
+        for (const p of profiles ?? []) {
+          const { count: totalCount } = await (supabase as any)
+            .from('bets')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', p.id);
+          const { count: wonCount } = await (supabase as any)
+            .from('bets')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', p.id)
+            .eq('status', 'won');
+          const won = wonCount ?? 0;
+          const total = totalCount ?? 0;
+          const winRate = total > 0 ? Math.round((won / total) * 100) : 0;
+          built.push({
+            id: p.id,
+            rank: 0,
+            name: p.full_name,
+            avatar: p.avatar_url ?? 'https://placehold.co/80x80?text=👤',
+            avatarAlt: 'Gebruiker avatar',
+            points: p.points_balance,
+            winRate,
+            accuracy: winRate,
+            totalBets: totalCount ?? 0,
+            achievements: [],
+            recentBets: [],
+            rankChange: 'same',
+            rankChangeValue: 0,
+          });
+        }
+        built.sort((a, b) => b.points - a.points);
+        built.forEach((m, i) => (m.rank = i + 1));
+        setMembers(built);
+      })
+      .subscribe();
+    return () => {
+      try {
+        (supabase as any).removeChannel(ch);
+      } catch (e) {
+        void e;
+      }
+    };
+  }, []);
+
   const currentUser = members.find((m) => m.id === profile?.id);
 
   const handleMemberClick = (memberId: string) => {

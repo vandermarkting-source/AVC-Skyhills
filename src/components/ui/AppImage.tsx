@@ -60,10 +60,9 @@ function AppImage({
 
   const commonClassName = `${className} ${isLoading ? 'animate-pulse bg-gray-200' : ''} ${onClick ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`;
 
-  // For external URLs or when in doubt, use regular img tag
+  // For external URLs, use Next.js Image component with unoptimized
   if (isExternal && !isLocal) {
     const imgStyle: React.CSSProperties = {};
-
     if (width) imgStyle.width = width;
     if (height) imgStyle.height = height;
 
@@ -73,13 +72,16 @@ function AppImage({
           className={`relative ${className}`}
           style={{ width: width || '100%', height: height || '100%' }}
         >
-          <img
+          <Image
             src={imageSrc}
             alt={alt}
             className={`${commonClassName} absolute inset-0 w-full h-full object-cover`}
             onError={handleError}
             onLoad={handleLoad}
             onClick={onClick}
+            fill
+            sizes={sizes || '100vw'}
+            unoptimized
             style={imgStyle}
             {...props}
           />
@@ -88,13 +90,16 @@ function AppImage({
     }
 
     return (
-      <img
+      <Image
         src={imageSrc}
         alt={alt}
         className={commonClassName}
         onError={handleError}
         onLoad={handleLoad}
         onClick={onClick}
+        width={width || 400}
+        height={height || 300}
+        unoptimized
         style={imgStyle}
         {...props}
       />
@@ -120,12 +125,18 @@ function AppImage({
   if (fill) {
     return (
       <div className={`relative ${className}`}>
-        <Image {...imageProps} fill sizes={sizes || '100vw'} style={{ objectFit: 'cover' }} />
+        <Image
+          {...imageProps}
+          alt={alt}
+          fill
+          sizes={sizes || '100vw'}
+          style={{ objectFit: 'cover' }}
+        />
       </div>
     );
   }
 
-  return <Image {...imageProps} width={width || 400} height={height || 300} />;
+  return <Image {...imageProps} alt={alt} width={width || 400} height={height || 300} />;
 }
 
 export default AppImage;

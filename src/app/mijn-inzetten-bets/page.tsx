@@ -71,23 +71,58 @@ export default function MijnInzettenBetsPage() {
   }, [user]);
 
   useEffect(() => {
+    const refreshRecent = async () => {
+      const resp = await fetch('/api/recent-bets');
+      const json = await resp.json();
+      const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
+        id: b.id,
+        title: b.title,
+        option: b.option,
+        stake: b.stake,
+        potentialWin: b.potentialWin,
+        status: b.status,
+        emoji: b.title?.includes('vs') ? '🏐' : '🎯',
+        userName: b.userName,
+      }));
+      setRecentBets(recMapped);
+      setTotalToday(Number(json?.totalToday ?? 0));
+    };
+
     const ch = (supabase as any)
       .channel('recent_bets_live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bets' }, async () => {
-        const resp = await fetch('/api/recent-bets');
-        const json = await resp.json();
-        const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
-          id: b.id,
-          title: b.title,
-          option: b.option,
-          stake: b.stake,
-          potentialWin: b.potentialWin,
-          status: b.status,
-          emoji: b.title?.includes('vs') ? '🏐' : '🎯',
-          userName: b.userName,
-        }));
-        setRecentBets(recMapped);
-        setTotalToday(Number(json?.totalToday ?? 0));
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'bets' },
+        async (payload: any) => {
+          await refreshRecent();
+          if (user && payload?.new?.user_id === user.id) {
+            const { data: mine } = await betService.getUserBets(user.id, 'pending');
+            const myMapped: ListBet[] = (mine ?? []).map((b: any) => {
+              const isMatch = !!b.bet_options?.match_id;
+              const title = isMatch
+                ? `${b.bet_options?.matches?.home_team ?? ''} vs ${b.bet_options?.matches?.away_team ?? ''}`
+                : (b.bet_options?.fun_bets?.title ?? 'Fun Bet');
+              const option = b.bet_options?.option_text ?? '';
+              const emoji = isMatch ? '🏐' : '🎯';
+              return {
+                id: b.id,
+                title,
+                option,
+                stake: b.stake,
+                potentialWin: b.potential_payout,
+                status: b.status,
+                emoji,
+              };
+            });
+            setMyBets(myMapped);
+          }
+        }
+      )
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bets' }, async () => {
+        await refreshRecent();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bets' }, async () => {
+        await refreshRecent();
       })
       .subscribe();
     return () => {
@@ -142,7 +177,10 @@ export default function MijnInzettenBetsPage() {
             ) : (
               <div className="space-y-3">
                 {myBets.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between p-3 border border-border rounded-sm">
+                  <div
+                    key={b.id}
+                    className="flex items-center justify-between p-3 border border-border rounded-sm"
+                  >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl" role="img" aria-label="bet">
                         {b.emoji}
@@ -154,9 +192,13 @@ export default function MijnInzettenBetsPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-text-secondary">Inzet</div>
-                      <div className="font-data font-semibold text-text-primary">{b.stake} punten</div>
+                      <div className="font-data font-semibold text-text-primary">
+                        {b.stake} punten
+                      </div>
                       <div className="text-sm text-text-secondary">Mogelijke winst</div>
-                      <div className="font-data font-semibold text-success">{b.potentialWin} punten</div>
+                      <div className="font-data font-semibold text-success">
+                        {b.potentialWin} punten
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -171,10 +213,15 @@ export default function MijnInzettenBetsPage() {
           </div>
           <div className="space-y-2">
             {recentBets.length === 0 ? (
-              <div className="bg-card border border-border rounded-md p-4 text-text-secondary">Nog geen recente inzetten.</div>
+              <div className="bg-card border border-border rounded-md p-4 text-text-secondary">
+                Nog geen recente inzetten.
+              </div>
             ) : (
               recentBets.map((b) => (
-                <div key={b.id} className="bg-card border border-border rounded-sm p-2 flex items-center justify-between">
+                <div
+                  key={b.id}
+                  className="bg-card border border-border rounded-sm p-2 flex items-center justify-between"
+                >
                   <div className="flex items-center gap-3">
                     <span className="text-xl" role="img" aria-label="bet">
                       {b.emoji}
@@ -187,9 +234,13 @@ export default function MijnInzettenBetsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-[11px] text-text-secondary">Inzet</div>
-                    <div className="font-data font-semibold text-text-primary text-sm">{b.stake} pts</div>
+                    <div className="font-data font-semibold text-text-primary text-sm">
+                      {b.stake} pts
+                    </div>
                     <div className="text-[11px] text-text-secondary">Mogelijke winst</div>
-                    <div className="font-data font-semibold text-success text-sm">{b.potentialWin} pts</div>
+                    <div className="font-data font-semibold text-success text-sm">
+                      {b.potentialWin} pts
+                    </div>
                   </div>
                 </div>
               ))
