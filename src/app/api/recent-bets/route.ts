@@ -3,11 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
-  if (!url || !serviceRole) {
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY as string | undefined;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+  if (!url || (!serviceRole && !anon)) {
     return NextResponse.json({ error: 'Supabase server configuratie ontbreekt' }, { status: 500 });
   }
-  const admin = createClient(url, serviceRole, {
+  const key = serviceRole ?? (anon as string);
+  const admin = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 

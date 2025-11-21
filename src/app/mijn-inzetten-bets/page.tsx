@@ -57,7 +57,7 @@ export default function MijnInzettenBetsPage() {
 
   useEffect(() => {
     const refreshRecent = async () => {
-      const resp = await fetch('/api/recent-bets', { cache: 'no-store' });
+      const resp = await fetch(`/api/recent-bets?ts=${Date.now()}`, { cache: 'no-store' });
       const json = await resp.json();
       const recMapped: ListBet[] = (json?.items ?? []).map((b: any) => ({
         id: b.id,
