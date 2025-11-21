@@ -17,36 +17,20 @@ export async function GET() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data, error } = await admin
-    .from('bets')
-    .select(
-      `
-      id, user_id, stake, potential_payout, status, placed_at,
-      bet_options!inner (
-        id, option_text,
-        matches (id, home_team, away_team),
-        fun_bets (id, title)
-      ),
-      user_profiles:user_id (id, full_name)
-    `
-    )
-    .order('placed_at', { ascending: false })
-    .limit(30);
+  const { data, error } = await admin.rpc('get_recent_bets', { limit_count: 30 });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   const items = (data ?? []).map((b: any) => {
-    const isMatch = !!b.bet_options?.matches?.id;
-    const title = isMatch
-      ? `${b.bet_options?.matches?.home_team ?? ''} vs ${b.bet_options?.matches?.away_team ?? ''}`
-      : (b.bet_options?.fun_bets?.title ?? 'Fun Bet');
+    const isMatch = !!b.match_home && !!b.match_away;
+    const title = isMatch ? `${b.match_home ?? ''} vs ${b.match_away ?? ''}` : (b.fun_title ?? 'Fun Bet');
     return {
       id: b.id,
       userId: b.user_id,
-      userName: b.user_profiles?.full_name ?? 'Onbekend',
-      option: b.bet_options?.option_text ?? '',
+      userName: b.user_full_name ?? 'Onbekend',
+      option: b.option_text ?? '',
       stake: b.stake,
       potentialWin: b.potential_payout,
       status: b.status,
@@ -56,19 +40,8 @@ export async function GET() {
   });
 
   // Dag-totaal (UTC daggrenzen)
-  const now = new Date();
-  const start = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0)
-  );
-  const end = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0)
-  );
-  const { data: today } = await admin
-    .from('bets')
-    .select('stake, placed_at')
-    .gte('placed_at', start.toISOString())
-    .lt('placed_at', end.toISOString());
-  const totalToday = (today ?? []).reduce((s: number, b: any) => s + (b?.stake ?? 0), 0);
+  const { data: totalResp } = await admin.rpc('get_total_stake_today', { tz: 'Europe/Amsterdam' });
+  const totalToday = Number(totalResp ?? 0);
 
   return NextResponse.json({ items, totalToday }, {
     headers: {
